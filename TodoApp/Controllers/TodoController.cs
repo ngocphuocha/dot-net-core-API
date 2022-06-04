@@ -8,7 +8,7 @@ using TodoApp.Models;
 
 namespace TodoApp.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]")] // mean api/todo
     [ApiController]
     public class TodoController : ControllerBase
     {
@@ -51,7 +51,7 @@ namespace TodoApp.Controllers
                 return CreatedAtAction("GetItem", new { data.Id }, data);
             }
 
-            return new JsonResult("Somethign Went wrong") { StatusCode = 500 };
+            return new JsonResult("Something Went wrong") { StatusCode = 500 };
         }
 
         [HttpPut("{id}")]
