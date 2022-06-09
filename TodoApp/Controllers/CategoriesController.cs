@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -8,7 +9,8 @@ using TodoApp.Models;
 
 namespace TodoApp.Controllers
 {
-    [Route("api/[Controller]")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Route("api/[controller]")] // api/todo
     [ApiController]
     public class CategoriesController : ControllerBase
     {
@@ -72,14 +74,14 @@ namespace TodoApp.Controllers
 
             // Following up the REST standart on update we need to return NoContent
             return NoContent();
-        } 
+        }
 
-        [HttpDelete("{id}")] 
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var existCategory = await _context.Categories.FirstOrDefaultAsync(z => z.Id == id);
 
-            if(existCategory == null )
+            if (existCategory == null)
             {
                 return BadRequest();
             }

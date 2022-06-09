@@ -1,38 +1,44 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using TodoApp.Data;
 using TodoApp.Models;
+using TodoApp.Repositories.Interfaces;
+using TodoApp.Services.IServices;
 
 namespace TodoApp.Controllers
 {
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] for apply all action in controller
     [Route("api/[controller]")] // mean api/todo
     [ApiController]
     public class TodoController : ControllerBase
     {
-        // khi nao dung formBody vi em thay trong create voi update ko them dung ma cai register thi dung?
+        //private readonly ApiDbContext _context;
+        private readonly ITodoRepository _todoRepos;
+        private readonly ICaculator _caculator;
 
-        private readonly ApiDbContext _context;
-
-        public TodoController(ApiDbContext context)
+        public TodoController(ITodoRepository todoRepository, ICaculator caculator)
         {
-            _context = context;
+            _todoRepos = todoRepository;
+            _caculator = caculator;
         }
 
-
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet]
-        public ActionResult GetItems()
+        public async Task<IActionResult> GetItems()
         {
-            var items = _context.Items.ToList();
+            var result = _caculator.Add(100, 200);
+            var items = await _todoRepos.GetAll();
             return Ok(items);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetItem(int id)
         {
-            var item = await _context.Items.FirstOrDefaultAsync(z => z.Id == id);
+            var item = await _todoRepos.GetById(id);
 
             if (item == null)
                 return NotFound();
@@ -45,13 +51,13 @@ namespace TodoApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _context.Items.AddAsync(data);
-                await _context.SaveChangesAsync();
+                await _todoRepos.Create(data);
 
                 return CreatedAtAction("GetItem", new { data.Id }, data);
             }
 
-            return new JsonResult("Something Went wrong") { StatusCode = 500 };
+          //      return new JsonResult("Something Went wrong") { StatusCode = 400 };
+            return BadRequest("Something went wrong");
         }
 
         [HttpPut("{id}")]
@@ -61,16 +67,15 @@ namespace TodoApp.Controllers
             if (id != item.Id)
                 return BadRequest();
 
-            var existItem = await _context.Items.FirstOrDefaultAsync(z => z.Id == id);
+            var existItem = await _todoRepos.GetById(id);
 
             if (existItem == null)
                 return NotFound();
 
             existItem.Title = item.Title;
             existItem.Details = item.Details;
-            existItem.Done = item.Done;
 
-            await _context.SaveChangesAsync();
+            await _todoRepos.Save();
 
             // Following up the REST standart on update we need to return NoContent
             return NoContent();
@@ -79,13 +84,13 @@ namespace TodoApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {
-            var existItem = await _context.Items.FirstOrDefaultAsync(z => z.Id == id);
+            var existItem = await _todoRepos.GetById(id);
 
             if (existItem == null)
                 return NotFound();
 
-            _context.Items.Remove(existItem);
-            await _context.SaveChangesAsync();
+
+            await _todoRepos.Delete(existItem);
 
             return Ok(existItem);
         }
